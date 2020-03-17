@@ -1,10 +1,12 @@
 package com.xebialabs.gradle.dependency
 
 import com.xebialabs.gradle.dependency.domain.GroupArtifact
+import com.xebialabs.gradle.dependency.domain.GroupArtifactVersion
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.DependencyResolveDetails
+import org.gradle.api.artifacts.DependencySubstitutions
 import org.gradle.api.artifacts.ResolutionStrategy
 
 class DependencyManagementProjectConfigurer {
@@ -15,6 +17,7 @@ class DependencyManagementProjectConfigurer {
       if (config.name != 'zinc') { // The Scala compiler 'zinc' configuration should not be managed by us
         config.resolutionStrategy { ResolutionStrategy rs ->
           rs.eachDependency(manageDependency(project, container))
+          rs.dependencySubstitution(substituteDependency(project, container))
         }
         configureExcludes(project, config, container)
       }
@@ -26,6 +29,32 @@ class DependencyManagementProjectConfigurer {
       container.resolveIfNecessary()
       project.logger.debug("Excluding ${ga.toMap()} from configuration ${config.getName()}")
       config.exclude ga.toMap()
+    }
+  }
+
+  private static Action<? super DependencySubstitutions> substituteDependency(Project project, DependencyManagementContainer container) {
+    return new Action<DependencySubstitutions>() {
+      @Override
+      void execute(final DependencySubstitutions dependencySubstitutions) {
+        container.resolveIfNecessary()
+        substitute(dependencySubstitutions)
+      }
+
+      private void substitute(DependencySubstitutions dependencySubstitutions) {
+        def rewrites = container.rewrites
+        rewrites.forEach { GroupArtifact requested, GroupArtifact targetGroupArtifact ->
+          def requestedVersion = container.getManagedVersion(requested.group, requested.artifact)
+          def rewriteVersion = container.getManagedVersion(targetGroupArtifact.group, targetGroupArtifact.artifact) ?: requestedVersion
+          if (rewriteVersion) {
+            GroupArtifactVersion targetGroupArtifactVersion = targetGroupArtifact.withVersion(rewriteVersion)
+            def source = dependencySubstitutions.module("${requested.group}:${requested.artifact}")
+            def target = dependencySubstitutions.module("${targetGroupArtifactVersion.group}:${targetGroupArtifactVersion.artifact}:${targetGroupArtifactVersion.version}")
+            dependencySubstitutions.substitute(source).because("rewrite").with(target)
+          } else {
+            throw new IllegalStateException("No version found for ${requested} nor ${targetGroupArtifact}")
+          }
+        }
+      }
     }
   }
 
@@ -48,8 +77,10 @@ class DependencyManagementProjectConfigurer {
           def rewriteVersion = container.getManagedVersion(groupArtifact.group, groupArtifact.artifact)
           if (rewriteVersion) {
             groupArtifact = groupArtifact.withVersion(rewriteVersion)
+            rewrites[fromGa] = groupArtifact
           } else {
             groupArtifact = groupArtifact.withVersion(requestedVersion)
+            rewrites[fromGa] = groupArtifact
           }
           project.logger.debug("Rewriting $fromGa -> $groupArtifact")
           details.useTarget(groupArtifact.toMap(details.requested))

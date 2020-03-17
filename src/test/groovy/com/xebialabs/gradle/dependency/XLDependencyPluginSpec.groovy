@@ -3,6 +3,8 @@ package com.xebialabs.gradle.dependency
 import nebula.test.IntegrationSpec
 import nebula.test.dependencies.DependencyGraph
 import nebula.test.dependencies.GradleDependencyGenerator
+import spock.lang.Ignore
+import spock.lang.IgnoreRest
 
 class XLDependencyPluginSpec extends IntegrationSpec {
 
@@ -25,7 +27,7 @@ class XLDependencyPluginSpec extends IntegrationSpec {
                                      'ch.qos.logback:logback-core:1.1.3',
                                      'org.hamcrest:hamcrest-core:1.1.2',
                                      'org.hamcrest:hamcrest-core:1.1.3',
-                                     'com.netflix.nebula:nebula-test:3.1.0 -> commons-lang:commons-lang:2.6',
+                                     'com.netflix.nebula:nebula-test:7.8.5 -> commons-lang:commons-lang:2.6',
                                      'junit:junit:4.11 -> org.hamcrest:hamcrest-core:1.1.2',
                                      'junit:junit:4.12 -> org.hamcrest:hamcrest-core:1.1.3'])
     def generator = new GradleDependencyGenerator(graph)
@@ -43,6 +45,10 @@ class XLDependencyPluginSpec extends IntegrationSpec {
     project.repositories {
       maven {
         url "file://${repoDir.getAbsolutePath()}"
+        metadataSources {
+          mavenPom()
+          artifact()
+        }
       }
     }
   }
@@ -70,6 +76,10 @@ class XLDependencyPluginSpec extends IntegrationSpec {
       repositories {
         maven {
           url "file://${repoDir.getAbsolutePath()}"
+            metadataSources {
+              mavenPom()
+              artifact()
+            }
         }
       }
       assert junitVersion == '4.12'
@@ -323,7 +333,7 @@ class XLDependencyPluginSpec extends IntegrationSpec {
       dependencyManagement {
         dependencies: [
           "junit:junit:$junitVersion"
-          "com.netflix.nebula:nebula-test:3.1.0"
+          "com.netflix.nebula:nebula-test:7.8.5"
         ]
         blacklist: [ "org.hamcrest:hamcrest-core", "commons-lang:commons-lang" ]
       }
@@ -338,6 +348,10 @@ class XLDependencyPluginSpec extends IntegrationSpec {
         repositories {
           maven {
             url "file://@repoDir@"
+            metadataSources {
+              mavenPom()
+              artifact()
+            }    
           }
         }
 
@@ -373,7 +387,7 @@ class XLDependencyPluginSpec extends IntegrationSpec {
 
     def subfileNames = new File(projectDir, 'sub/artifacts').listFiles().collect({ it.name }) as Set
     subfileNames.size() == 1
-    subfileNames.contains('nebula-test-3.1.0.jar')
+    subfileNames.contains('nebula-test-7.8.5.jar')
     !subfileNames.contains('commons-lang-2.6.jar')
   }
 
@@ -425,6 +439,10 @@ class XLDependencyPluginSpec extends IntegrationSpec {
       repositories {
         maven {
           url "file://${repoDir.absolutePath}"
+          metadataSources {
+              mavenPom()
+              artifact()
+          }
         }
       }
     """
