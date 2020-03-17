@@ -50,8 +50,6 @@ class DependencyManagementProjectConfigurer {
             def source = dependencySubstitutions.module("${requested.group}:${requested.artifact}")
             def target = dependencySubstitutions.module("${targetGroupArtifactVersion.group}:${targetGroupArtifactVersion.artifact}:${targetGroupArtifactVersion.version}")
             dependencySubstitutions.substitute(source).because("rewrite").with(target)
-          } else {
-            throw new IllegalStateException("No version found for ${requested} nor ${targetGroupArtifact}")
           }
         }
       }

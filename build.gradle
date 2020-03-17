@@ -2,7 +2,7 @@ plugins {
   id "groovy"
   id "idea"
   id "maven-publish"
-  id "java-gradle-plugin"
+  id "java-library"
   id "com.gradle.plugin-publish" version "0.10.1"
   id "com.github.hierynomus.license" version "0.15.0"
   id 'nebula.release' version '13.0.0'
@@ -46,19 +46,6 @@ if (JavaVersion.current().isJava8Compatible()) {
   }
 }
 
-gradlePlugin {
-  plugins {
-    dependencyPlugin {
-      id = 'com.xebialabs.dependency'
-      implementationClass = 'com.xebialabs.gradle.dependency.XLDependencyPlugin'
-    }
-    dependencyBasePlugin {
-      id = 'com.xebialabs.dependency.base'
-      implementationClass = 'com.xebialabs.gradle.dependency.XLDependencyBasePlugin'
-    }
-  }
-}
-
 pluginBundle {
   website = 'http://www.xebialabs.com/'
   vcsUrl = 'https://github.com/xebialabs/gradle-xl-dependency-plugin'
@@ -73,6 +60,20 @@ pluginBundle {
     dependencyBasePlugin {
       id = 'com.xebialabs.dependency.base'
       displayName = 'XebiaLabs dependency base plugin'
+    }
+  }
+
+  mavenCoordinates {
+    groupId = 'com.xebialabs'
+    artifactId = 'gradle-xl-dependency-plugin'
+  }
+}
+
+publishing {
+  publications {
+    mavenJava( MavenPublication ) {
+      groupId "gradle.plugin.com.xebialabs"
+      from components.java
     }
   }
 }
